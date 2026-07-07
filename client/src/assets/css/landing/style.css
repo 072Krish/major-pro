@@ -21,7 +21,7 @@ a {
     color: inherit;
 }
 
-.navbar {
+.landing-page .navbar {
     width: 100%;
     padding: 22px 8%;
     display: flex;
@@ -36,8 +36,8 @@ a {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.logo,
-.footer-logo {
+.landing-page .logo,
+.landing-page .footer-logo{
     display: flex;
     align-items: center;
     gap: 10px;
@@ -57,7 +57,7 @@ a {
     -webkit-text-fill-color: transparent;
 }
 
-.nav-links {
+.landing-page .nav-links {
     display: flex;
     align-items: center;
     gap: 34px;
@@ -73,18 +73,18 @@ a {
     color: #22c55e;
 }
 
-.nav-actions {
+.landing-page .nav-actions {
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
-.login-link {
+.landing-page .login-link {
     color: #cbd5e1;
     font-size: 15px;
 }
 
-.signup-btn {
+.landing-page .signup-btn {
     padding: 11px 22px;
     border-radius: 999px;
     background: linear-gradient(135deg, #2563eb, #22c55e);
@@ -94,7 +94,7 @@ a {
     box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
 }
 
-.menu-btn {
+.landing-page .menu-btn {
     display: none;
     border: none;
     outline: none;
@@ -104,7 +104,7 @@ a {
     cursor: pointer;
 }
 
-.hero {
+.landing-page .hero {
     min-height: 100vh;
     padding: 150px 8% 90px;
     display: grid;
@@ -138,13 +138,13 @@ a {
     bottom: 80px;
 }
 
-.hero-content,
-.hero-visual {
+.landing-page .hero-content,
+.landing-page .hero-visual {
     position: relative;
     z-index: 2;
 }
 
-.badge {
+.landing-page .badge {
     width: fit-content;
     padding: 10px 16px;
     border-radius: 999px;
@@ -226,7 +226,7 @@ a {
     justify-content: center;
 }
 
-.dashboard-card {
+.landing-page .dashboard-card {
     width: min(100%, 430px);
     padding: 28px;
     border-radius: 30px;
@@ -413,7 +413,7 @@ a {
     margin-left: 8px;
 }
 
-.footer{
+.landing-page .footer{
     background:#020617;
     padding:80px 8% 30px;
     border-top:1px solid rgba(255,255,255,.08);
@@ -509,6 +509,7 @@ a {
     z-index:-1;
     animation:floatBlob 16s ease-in-out infinite alternate;
     pointer-events:none;
+    max-width:100%;
 }
 
 .blur-blue{
@@ -523,9 +524,10 @@ a {
     width:360px;
     height:360px;
     background:rgba(34,197,94,.18);
-    right:-100px;
+    right:0;
     bottom:-80px;
     animation-duration:20s;
+    overflow:hidden;
 }
 
 @keyframes floatBlob{
@@ -900,5 +902,3 @@ button:focus,
 a:focus{
     outline:none;
 }
-
-

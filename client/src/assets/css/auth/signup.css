@@ -254,7 +254,7 @@ body{
 
 /* BUTTON */
 
-.signup-btn{
+.signup-page .signup-btn{
     width:100%;
     margin-top:30px;
     padding:16px;
@@ -336,7 +336,7 @@ body{
 
 /* LOGIN LINK */
 
-.login-link{
+.signup-page .login-link{
     margin-top:25px;
     text-align:center;
     color:#94a3b8;

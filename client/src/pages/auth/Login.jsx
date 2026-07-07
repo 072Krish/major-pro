@@ -121,13 +121,14 @@ try {
                                 <i className="fa-solid fa-envelope"></i>
 
                                 <input
-                                    type="email"
-                                    name="email"
-                                    placeholder="Enter your email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                />
+    type="email"
+    name="email"
+    placeholder="Enter your email"
+    value={formData.email}
+    onChange={handleChange}
+    autoComplete="email"
+    required
+/>
                             </div>
                         </div>
 
@@ -137,14 +138,15 @@ try {
                             <div className="input-box">
                                 <i className="fa-solid fa-lock"></i>
 
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    placeholder="Enter your password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                />
+                               <input
+    type={showPassword ? "text" : "password"}
+    name="password"
+    placeholder="Enter your password"
+    value={formData.password}
+    onChange={handleChange}
+    autoComplete="current-password"
+    required
+/>
 
                                 <i
                                     className={`fa-solid ${

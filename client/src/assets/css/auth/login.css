@@ -115,7 +115,7 @@ textarea{
     z-index:0;
 }
 
-.hero-content{
+.login-page .hero-content{
     position:relative;
     z-index:2;
     text-align:center;
@@ -743,4 +743,6 @@ textarea{
         padding:40px;
     }
 }
+
+
 

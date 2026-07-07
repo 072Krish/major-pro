@@ -1,708 +1,271 @@
-import { Link } from "react-router-dom";
-
-import { useEffect, useState } from "react";
-
-import "../../assets/css/landing/style.css"; 
-
-
+import { useEffect } from "react";
+import "../../assets/css/landing/style.css";
 
 function Landing() {
-
-
-
-    const [menuOpen, setMenuOpen] = useState(false);
-
-
-
     useEffect(() => {
+        const menuBtn = document.getElementById("menuBtn");
+        const navLinks = document.getElementById("navLinks");
 
+        const handleMenuClick = () => {
+            navLinks.classList.toggle("active");
 
+            const icon = menuBtn.querySelector("i");
+
+            if (navLinks.classList.contains("active")) {
+                icon.classList.remove("fa-bars");
+                icon.classList.add("fa-xmark");
+            } else {
+                icon.classList.remove("fa-xmark");
+                icon.classList.add("fa-bars");
+            }
+        };
+
+        const navItems = document.querySelectorAll(".nav-links a");
+
+        const handleNavClick = () => {
+            navLinks.classList.remove("active");
+
+            const icon = menuBtn.querySelector("i");
+
+            if (icon) {
+                icon.classList.remove("fa-xmark");
+                icon.classList.add("fa-bars");
+            }
+        };
+
+        if (menuBtn && navLinks) {
+            menuBtn.addEventListener("click", handleMenuClick);
+        }
+
+        navItems.forEach(link => {
+            link.addEventListener("click", handleNavClick);
+        });
 
         const counters = document.querySelectorAll("[data-count]");
 
-
-
         const startCounter = (counter) => {
-
-
-
             const target = Number(counter.getAttribute("data-count"));
-
-
-
             const duration = 1600;
-
-
-
             const stepTime = 16;
-
-
-
             const totalSteps = duration / stepTime;
-
-
-
             const increment = target / totalSteps;
-
-
 
             let current = 0;
 
-
-
             const updateCounter = () => {
-
-
-
                 current += increment;
 
-
-
                 if (current < target) {
-
-
-
-                    counter.textContent =
-
-                        Math.floor(current).toLocaleString("en-IN");
-
-
-
+                    counter.textContent = Math.floor(current).toLocaleString("en-IN");
                     requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target.toLocaleString("en-IN");
 
-
-
+                    if (target === 850000) {
+                        counter.textContent = "₹" + target.toLocaleString("en-IN");
+                    }
                 }
-
-
-
-                else {
-
-
-
-                    counter.textContent =
-
-                        target === 850000
-
-                            ? "₹" + target.toLocaleString("en-IN")
-
-                            : target.toLocaleString("en-IN");
-
-
-
-                }
-
-
-
             };
 
-
-
             updateCounter();
-
-
-
         };
 
-
-
-        const counterObserver =
-
-            new IntersectionObserver((entries, observer) => {
-
-
-
-                entries.forEach(entry => {
-
-
-
-                    if (entry.isIntersecting) {
-
-
-
-                        startCounter(entry.target);
-
-
-
-                        observer.unobserve(entry.target);
-
-
-
-                    }
-
-
-
-                });
-
-
-
-            }, {
-
-                threshold: 0.4
-
+        const counterObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    startCounter(entry.target);
+                    observer.unobserve(entry.target);
+                }
             });
+        }, { threshold: 0.4 });
 
+        counters.forEach(counter => {
+            counterObserver.observe(counter);
+        });
 
+        const faqItems = document.querySelectorAll(".faq-item");
 
-        counters.forEach(counter =>
+        const faqHandlers = [];
 
-            counterObserver.observe(counter)
+        faqItems.forEach(item => {
+            const question = item.querySelector(".faq-question");
 
-        );
+            if (question) {
+                const handler = () => {
+                    faqItems.forEach(faq => {
+                        if (faq !== item) {
+                            faq.classList.remove("active");
+                        }
+                    });
 
+                    item.classList.toggle("active");
+                };
 
+                question.addEventListener("click", handler);
+                faqHandlers.push({ question, handler });
+            }
+        });
 
         const sections = document.querySelectorAll(
-
             ".hero, .trusted, .stats-section, .features, .testimonials, .faq-section, .insights, .footer"
-
         );
 
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("show");
+                }
+            });
+        }, { threshold: 0.15 });
 
+        sections.forEach(section => revealObserver.observe(section));
 
-        const observer =
+        return () => {
+            if (menuBtn) {
+                menuBtn.removeEventListener("click", handleMenuClick);
+            }
 
-            new IntersectionObserver((entries) => {
-
-
-
-                entries.forEach(entry => {
-
-
-
-                    if (entry.isIntersecting) {
-
-
-
-                        entry.target.classList.add("show");
-
-
-
-                    }
-
-
-
-                });
-
-
-
-            }, {
-
-                threshold: 0.15
-
+            navItems.forEach(link => {
+                link.removeEventListener("click", handleNavClick);
             });
 
+            counterObserver.disconnect();
+            revealObserver.disconnect();
 
-
-        sections.forEach(section =>
-
-            observer.observe(section)
-
-        );
-
-
-
+            faqHandlers.forEach(({ question, handler }) => {
+                question.removeEventListener("click", handler);
+            });
+        };
     }, []);
 
-
-
-return (
-    <div className="landing-page">
-
-
-
+    return (
+        <div className="landing-page">
             <div className="bg-blur blur-blue"></div>
-
             <div className="bg-blur blur-green"></div>
 
-
-
-            {/* ================= NAVBAR ================= */}
-
-
-
             <header className="navbar">
-
-
-
                 <div className="logo">
-
-
-
                     <i className="fa-solid fa-chart-line"></i>
-
-
-
                     <span>FinWise</span>
-
-
-
                 </div>
 
-
-
-                <nav className={`nav-links ${menuOpen ? "active" : ""}`}>
-
-
-
+                <nav className="nav-links" id="navLinks">
                     <a href="#home">Home</a>
-
-
-
                     <a href="#features">Features</a>
-
-
-
                     <a href="#faq">FAQ's</a>
-
-
-
                     <a href="#insights">Insights</a>
-
-
-
                     <a href="#contact">Contact</a>
-
-
-
                 </nav>
 
-
-
                 <div className="nav-actions">
-
-
-
-                    <Link
-
-                        to="/login"
-
-                        className="login-link">
-
-
-
-                        Login
-
-
-
-                    </Link>
-
-
-
-                    <Link
-
-                        to="/signup"
-
-                        className="signup-btn">
-
-
-
-                        Get Started
-
-
-
-                    </Link>
-
-
-
+                    <a href="/login" className="login-link">Login</a>
+                    <a href="/signup" className="signup-btn">Get Started</a>
                 </div>
 
-
-
-                <button
-
-                    className="menu-btn"
-
-                    onClick={() =>
-
-                        setMenuOpen(!menuOpen)
-
-                    }>
-
-
-
-                    <i className={`fa-solid ${menuOpen ? "fa-xmark" : "fa-bars"}`}></i>
-
-
-
+                <button className="menu-btn" id="menuBtn">
+                    <i className="fa-solid fa-bars"></i>
                 </button>
-
-
-
             </header>
 
-
-
-            {/* ================= HERO ================= */}
-
-
-
-            <section
-
-                className="hero"
-
-                id="home">
-
-
-
+            <section className="hero" id="home">
                 <div className="hero-content">
-
-
-
                     <div className="badge">
-
-
-
                         <i className="fa-solid fa-shield-halved"></i>
-
-
-
                         Smart finance tracking for modern users
-
-
-
                     </div>
-
-
 
                     <h1>
-
-
-
                         Visualize Your Money.
-
-
-
-                        <span>
-
-
-
-                            Control Your Future.
-
-
-
-                        </span>
-
-
-
+                        <span>Control Your Future.</span>
                     </h1>
 
-
-
                     <p>
-
-
-
-                        FinWise helps you track expenses,
-
-                        monitor income, analyze savings,
-
-                        and understand your financial habits
-
-                        through clean visual dashboards.
-
-
-
+                        FinWise helps you track expenses, monitor income, analyze savings,
+                        and understand your financial habits through clean visual dashboards.
                     </p>
 
-
-
                     <div className="hero-buttons">
-
-
-
-                        <Link
-
-                            to="/signup"
-
-                            className="primary-btn">
-
-
-
+                        <a href="/signup" className="primary-btn">
                             Start for Free
-
-
-
                             <i className="fa-solid fa-arrow-right"></i>
+                        </a>
 
-
-
-                        </Link>
-
-
-
-                        <Link
-
-                            to="/login"
-
-                            className="secondary-btn">
-
-
-
+                        <a href="/login" className="secondary-btn">
                             Login to Dashboard
-
-
-
-                        </Link>
-
-
-
+                        </a>
                     </div>
-
-
-
                 </div>
-
-
 
                 <div className="hero-visual">
-
-
-
                     <div className="dashboard-card">
-
-
-
                         <div className="card-top">
-
-
-
                             <div>
-
-
-
                                 <p>Total Balance</p>
-
-
-
                                 <h2>₹84,250</h2>
-
-
-
                             </div>
-
-
-
                             <i className="fa-solid fa-wallet"></i>
-
-
-
                         </div>
-
-
 
                         <div className="chart-box">
-
-
-
                             <span style={{ height: "45%" }}></span>
-
                             <span style={{ height: "70%" }}></span>
-
                             <span style={{ height: "55%" }}></span>
-
                             <span style={{ height: "85%" }}></span>
-
                             <span style={{ height: "65%" }}></span>
-
                             <span style={{ height: "95%" }}></span>
-
-
-
                         </div>
-
-
 
                         <div className="money-row income">
-
-
-
                             <div>
-
-
-
                                 <i className="fa-solid fa-arrow-trend-up"></i>
-
-
-
                                 <span>Income</span>
-
-
-
                             </div>
-
-
-
                             <strong>+ ₹32,000</strong>
-
-
-
                         </div>
-
-
 
                         <div className="money-row expense">
-
-
-
                             <div>
-
-
-
                                 <i className="fa-solid fa-arrow-trend-down"></i>
-
-
-
                                 <span>Expenses</span>
-
-
-
                             </div>
-
-
-
                             <strong>- ₹12,450</strong>
-
-
-
                         </div>
-
-
-
                     </div>
-
-
-
                 </div>
-
-
-
             </section>
-
-
-
-            {/* ================= TRUSTED ================= */}
-
-
 
             <section className="trusted">
-
-
-
-                <p>
-
-
-
-                    Trusted by modern finance learners and smart budget planners
-
-
-
-                </p>
-
-
+                <p>Trusted by modern finance learners and smart budget planners</p>
 
                 <div className="trusted-logos">
-
-
-
                     <span>BudgetIQ</span>
-
-
-
                     <span>MoneyFlow</span>
-
-
-
                     <span>SaveMate</span>
-
-
-
                     <span>Investly</span>
-
-
-
                 </div>
-
-
-
             </section>
-
-
-
-            {/* ================= STATS ================= */}
-
-
 
             <section className="stats-section">
-
-
-
                 <div className="stat-card">
-
-
-
                     <h2 data-count="2500">0</h2>
-
-
-
                     <p>Active Users</p>
-
-
-
                 </div>
 
-
-
                 <div className="stat-card">
-
-
-
                     <h2 data-count="12000">0</h2>
-
-
-
                     <p>Transactions Tracked</p>
-
-
-
                 </div>
 
-
-
                 <div className="stat-card">
-
-
-
                     <h2 data-count="850000">0</h2>
-
-
-
                     <p>Total Savings Visualized</p>
-
-
-
                 </div>
-
-
 
                 <div className="stat-card">
-
-
-
                     <h2 data-count="18">0</h2>
-
-
-
                     <p>Smart Reports</p>
-
-
-
                 </div>
-
-
-
             </section>
-            {/* ================= FEATURES ================= */}
 
             <section className="features" id="features">
                 <div className="section-heading">
@@ -732,8 +295,6 @@ return (
                 </div>
             </section>
 
-            {/* ================= TESTIMONIALS ================= */}
-
             <section className="testimonials">
                 <div className="section-heading">
                     <span>Testimonials</span>
@@ -743,7 +304,11 @@ return (
 
                 <div className="testimonial-grid">
                     <div className="testimonial-card">
-                        <p>“FinWise made it easy for me to understand my monthly spending. The dashboard feels clean, modern, and simple.”</p>
+                        <p>
+                            “FinWise made it easy for me to understand my monthly spending.
+                            The dashboard feels clean, modern, and simple.”
+                        </p>
+
                         <div className="user-row">
                             <div className="user-avatar">A</div>
                             <div>
@@ -754,7 +319,11 @@ return (
                     </div>
 
                     <div className="testimonial-card">
-                        <p>“The visual reports helped me track my income and savings better. It feels like a real finance SaaS product.”</p>
+                        <p>
+                            “The visual reports helped me track my income and savings better.
+                            It feels like a real finance SaaS product.”
+                        </p>
+
                         <div className="user-row">
                             <div className="user-avatar">R</div>
                             <div>
@@ -765,7 +334,11 @@ return (
                     </div>
 
                     <div className="testimonial-card">
-                        <p>“Simple UI, smooth design, and useful insights. FinWise is perfect for personal budget planning.”</p>
+                        <p>
+                            “Simple UI, smooth design, and useful insights. FinWise is perfect
+                            for personal budget planning.”
+                        </p>
+
                         <div className="user-row">
                             <div className="user-avatar">K</div>
                             <div>
@@ -777,8 +350,6 @@ return (
                 </div>
             </section>
 
-            {/* ================= FAQ ================= */}
-
             <section className="faq-section" id="faq">
                 <div className="section-heading">
                     <span>FAQ</span>
@@ -787,26 +358,47 @@ return (
                 </div>
 
                 <div className="faq-container">
-                    {[
-                        ["Is FinWise free to use?", "Yes, FinWise is free for basic personal finance tracking and dashboard visualization."],
-                        ["Does FinWise store my financial data securely?", "FinWise will use MERN authentication with JWT and MongoDB for secure user access."],
-                        ["Can I track income and expenses?", "Yes, the dashboard includes income, expense, savings, and report visualization modules."],
-                        ["Is FinWise responsive on mobile?", "Yes, FinWise is designed as a fully responsive financial dashboard."]
-                    ].map((faq, index) => (
-                        <div className="faq-item" key={index}>
-                            <button className="faq-question">
-                                {faq[0]}
-                                <i className="fa-solid fa-plus"></i>
-                            </button>
-                            <div className="faq-answer">
-                                <p>{faq[1]}</p>
-                            </div>
+                    <div className="faq-item">
+                        <button className="faq-question">
+                            Is FinWise free to use?
+                            <i className="fa-solid fa-plus"></i>
+                        </button>
+                        <div className="faq-answer">
+                            <p>Yes, FinWise is free for basic personal finance tracking and dashboard visualization.</p>
                         </div>
-                    ))}
+                    </div>
+
+                    <div className="faq-item">
+                        <button className="faq-question">
+                            Does FinWise store my financial data securely?
+                            <i className="fa-solid fa-plus"></i>
+                        </button>
+                        <div className="faq-answer">
+                            <p>FinWise uses MERN authentication with JWT and MongoDB to keep user access secure.</p>
+                        </div>
+                    </div>
+
+                    <div className="faq-item">
+                        <button className="faq-question">
+                            Can I track income and expenses?
+                            <i className="fa-solid fa-plus"></i>
+                        </button>
+                        <div className="faq-answer">
+                            <p>Yes, the dashboard will include income, expense, savings, and report visualization modules.</p>
+                        </div>
+                    </div>
+
+                    <div className="faq-item">
+                        <button className="faq-question">
+                            Is FinWise responsive on mobile?
+                            <i className="fa-solid fa-plus"></i>
+                        </button>
+                        <div className="faq-answer">
+                            <p>Yes, FinWise is being designed as a fully responsive SaaS-style financial dashboard.</p>
+                        </div>
+                    </div>
                 </div>
             </section>
-
-            {/* ================= INSIGHTS ================= */}
 
             <section className="insights" id="insights">
                 <div className="insight-card">
@@ -819,14 +411,12 @@ return (
                         </p>
                     </div>
 
-                    <Link to="/signup">
+                    <a href="/signup">
                         Create Account
                         <i className="fa-solid fa-arrow-right"></i>
-                    </Link>
+                    </a>
                 </div>
             </section>
-
-            {/* ================= FOOTER ================= */}
 
             <footer className="footer" id="contact">
                 <div className="footer-container">
@@ -837,8 +427,10 @@ return (
                         </div>
 
                         <p>
-                            FinWise is a Smart Financial Visualization Dashboard that helps users
-                            track income, expenses, savings, and make better financial decisions.
+                            FinWise is a Smart Financial Visualization Dashboard
+                            that helps users track income, expenses, savings,
+                            and make better financial decisions through intuitive
+                            analytics and interactive reports.
                         </p>
                     </div>
 
@@ -846,7 +438,7 @@ return (
                         <h3>Platform</h3>
                         <a href="#features">Features</a>
                         <a href="#insights">Insights</a>
-                        <Link to="/login">Dashboard</Link>
+                        <a href="/login">Dashboard</a>
                         <a href="#">Budget Tracking</a>
                     </div>
 
@@ -860,14 +452,45 @@ return (
 
                     <div className="footer-col footer-contact">
                         <h3>Contact</h3>
-                        <p><i className="fa-solid fa-envelope"></i> support@finwise.com</p>
-                        <p><i className="fa-solid fa-phone"></i> +91 98765 43210</p>
-                        <p><i className="fa-solid fa-location-dot"></i> New Delhi, India</p>
+
+                        <p>
+                            <i className="fa-solid fa-envelope"></i>
+                            support@finwise.com
+                        </p>
+
+                        <p>
+                            <i className="fa-solid fa-phone"></i>
+                            +91 98765 43210
+                        </p>
+
+                        <p>
+                            <i className="fa-solid fa-location-dot"></i>
+                            New Delhi, India
+                        </p>
+
+                        <div className="social-links">
+                            <a href="#">
+                                <i className="fab fa-linkedin-in"></i>
+                            </a>
+
+                            <a href="#">
+                                <i className="fab fa-github"></i>
+                            </a>
+
+                            <a href="#">
+                                <i className="fab fa-instagram"></i>
+                            </a>
+
+                            <a href="#">
+                                <i className="fab fa-x-twitter"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 <div className="footer-bottom">
                     <p>© 2026 FinWise. All Rights Reserved.</p>
+
                     <span>Built with ❤️ using MERN Stack</span>
                 </div>
             </footer>
