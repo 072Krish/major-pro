@@ -344,12 +344,12 @@ function Insights() {
                         Insights
                     </Link>
 
-                    <a href="#">
+                    <a href="/budget">
                         <i className="fa-solid fa-wallet"></i>
                         Budget
                     </a>
 
-                    <a href="#">
+                    <a href="/goals">
                         <i className="fa-solid fa-bullseye"></i>
                         Goals
                     </a>

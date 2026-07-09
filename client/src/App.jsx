@@ -8,6 +8,7 @@ import Transactions from "./pages/transactions/Transactions";
 import Budget from "./pages/budget/Budget";
 import Reports from "./pages/reports/Reports";
 import Insights from "./pages/insights/Insights";
+import Goals from "./pages/goals/Goals";
 import Landing from "./pages/landing/Landing";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -64,6 +65,16 @@ function App() {
         </ProtectedRoute>
     }
 />
+
+<Route
+    path="/goals"
+    element={
+        <ProtectedRoute>
+            <Goals />
+        </ProtectedRoute>
+    }
+/>
+
 </Routes>
         </>
     );
