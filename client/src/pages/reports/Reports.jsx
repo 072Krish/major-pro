@@ -19,6 +19,7 @@ import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 import { logout } from "../../utils/auth";
 import useAutoLogout from "../../hooks/useAutoLogout";
+import { useSettings } from "../../context/SettingsContext";
 import { getTransactionsAPI } from "../../services/transactionService";
 
 import "../../assets/css/reports/reports.css";
@@ -38,9 +39,13 @@ ChartJS.register(
 function Reports() {
     useAutoLogout();
 
-    const user = JSON.parse(localStorage.getItem("user")) || {};
-    const userName = user.name || "User";
-    const userInitial = userName.charAt(0).toUpperCase();
+    const { settings } = useSettings();
+
+    const userName =
+    settings.profile.name || "FinWise User";
+
+const userInitial =
+    userName.trim().charAt(0).toUpperCase() || "U";
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [pageLoading, setPageLoading] = useState(true);
@@ -426,7 +431,7 @@ function Reports() {
                         Goals
                     </a>
 
-                    <a href="#">
+                    <a href="/settings">
                         <i className="fa-solid fa-gear"></i>
                         Settings
                     </a>

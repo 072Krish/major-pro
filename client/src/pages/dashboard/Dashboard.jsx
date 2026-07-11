@@ -6,6 +6,8 @@ import { logout } from "../../utils/auth";
 import useAutoLogout from "../../hooks/useAutoLogout";
 
 import { getTransactionsAPI, addTransactionAPI, } from "../../services/transactionService";
+import { getBudgetAPI } from "../../services/budgetService";
+import { getGoalsAPI } from "../../services/goalService";
 
 import "../../assets/css/dashboard/dashboard.css";
 
@@ -13,14 +15,17 @@ import IncomeExpenseChart from "../../components/charts/IncomeExpenseChart";
 import ExpenseCategoryChart from "../../components/charts/ExpenseCategoryChart";
 import DashboardSkeleton from "../../components/skeletons/DashboardSkeleton";
 import { getNotifications, markAllNotificationsRead, cleanOldNotifications, } from "../../utils/notificationService";
+import { useSettings } from "../../context/SettingsContext";
+
 
 function Dashboard() {
+    const { settings } = useSettings();
     useAutoLogout();
 
     const user = JSON.parse(localStorage.getItem("user")) || {};
 
-    const userName = user.name || "User";
-    const userInitial = userName.charAt(0).toUpperCase();
+    const userName = settings.profile.name || "FinWise User";
+    const userInitial = settings.profile.name ? settings.profile.name.charAt(0).toUpperCase() : "U";
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
@@ -29,6 +34,8 @@ function Dashboard() {
     const [saving, setSaving] = useState(false);
 
     const [transactions, setTransactions] = useState([]);
+    const [dashboardMonthlyBudget, setDashboardMonthlyBudget] = useState(0);
+    const [dashboardGoals, setDashboardGoals] = useState([]);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const notificationRef = useRef(null);
 
@@ -36,50 +43,110 @@ function Dashboard() {
         JSON.parse(localStorage.getItem("seenNotifications")
         ) || []);
 
-    const savedBudget = JSON.parse(localStorage.getItem("finwise_budget_data")) || {};
-    const dashboardMonthlyBudget = Number(savedBudget.monthlyLimit || 0);
-
     const [formData, setFormData] =
         useState({
             title: "", amount: "", type: "", category: "", date: "",
         });
 
-    const fetchTransactions = async (showSkeleton = false) => {
-        try {
-            if (showSkeleton) {
-                setPageLoading(true);
-            }
+const fetchDashboardData = async (
+    showSkeleton = false
+) => {
+    try {
+        if (showSkeleton) {
+            setPageLoading(true);
+        }
 
-            const startTime = Date.now();
-            const data = await getTransactionsAPI();
+        const startTime = Date.now();
 
-            setTransactions(data.transactions || []);
-            if (showSkeleton) {
-                const elapsed = Date.now() - startTime;
-                const minimumDelay = 1800;
+        const [
+            transactionResponse,
+            budgetResponse,
+            goalsResponse,
+        ] = await Promise.all([
+            getTransactionsAPI(),
+            getBudgetAPI(),
+            getGoalsAPI(),
+        ]);
 
-                if (elapsed < minimumDelay) {
-                    await new Promise((resolve) =>
-                        setTimeout(resolve, minimumDelay - elapsed)
-                    );
-                }
-            }
+        setTransactions(
+            transactionResponse.transactions || []
+        );
 
-        } catch (error) {
-            toast.error(
-                error.response?.data?.message ||
-                "Failed to load transactions"
-            );
+        setDashboardMonthlyBudget(
+            Number(
+                budgetResponse.budget?.monthlyBudget ||
+                0
+            )
+        );
 
-        } finally {
-            if (showSkeleton) {
-                setPageLoading(false);
+        setDashboardGoals(
+            goalsResponse.goals || []
+        );
+
+        if (showSkeleton) {
+            const elapsed =
+                Date.now() - startTime;
+
+            const minimumDelay = 1800;
+
+            if (elapsed < minimumDelay) {
+                await new Promise((resolve) =>
+                    setTimeout(
+                        resolve,
+                        minimumDelay - elapsed
+                    )
+                );
             }
         }
+
+    } catch (error) {
+        toast.error(
+            error.response?.data?.message ||
+            "Failed to load dashboard data"
+        );
+
+    } finally {
+        if (showSkeleton) {
+            setPageLoading(false);
+        }
+    }
+};
+
+useEffect(() => {
+    fetchDashboardData(true);}, []);
+    useEffect(() => {
+
+    const handleDashboardRefresh = () => {
+
+        fetchDashboardData(false);
+
     };
 
-    useEffect(() => {
-        fetchTransactions(true);}, []);
+    window.addEventListener(
+        "focus",
+        handleDashboardRefresh
+    );
+
+    document.addEventListener(
+        "visibilitychange",
+        handleDashboardRefresh
+    );
+
+    return () => {
+
+        window.removeEventListener(
+            "focus",
+            handleDashboardRefresh
+        );
+
+        document.removeEventListener(
+            "visibilitychange",
+            handleDashboardRefresh
+        );
+
+    };
+
+}, []);
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (
@@ -157,20 +224,40 @@ function Dashboard() {
 
     const dashboardBudgetRemaining = dashboardMonthlyBudget - currentMonthExpense;
     const recentTransactions = transactions.slice(0, 3);
-    const savedGoals = JSON.parse(localStorage.getItem("finwise_goals_data")) || [];
 
-    const activeGoal = useMemo(() => {
-        if (savedGoals.length === 0) return null;
+const activeGoal = useMemo(() => {
+    if (dashboardGoals.length === 0) {
+        return null;
+    }
 
-        const sorted = [...savedGoals].sort((a, b) =>
-            new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+    const sortedGoals = [
+        ...dashboardGoals,
+    ].sort((a, b) => {
+        return (
+            new Date(a.createdAt || 0) -
+            new Date(b.createdAt || 0)
         );
+    });
 
-        const ongoingGoal = sorted.find(g => Number(g.savedAmount || 0) < Number(g.targetAmount || 0));
+    const ongoingGoal =
+        sortedGoals.find((goal) => {
+            return (
+                Number(
+                    goal.savedAmount || 0
+                ) <
+                Number(
+                    goal.targetAmount || 0
+                )
+            );
+        });
 
-        if (ongoingGoal) return ongoingGoal;
-        return sorted[0];
-    }, [savedGoals]);
+    if (ongoingGoal) {
+        return ongoingGoal;
+    }
+
+    return sortedGoals[0];
+
+}, [dashboardGoals]);
 
     const goalTarget = Number(activeGoal?.targetAmount || 0);
     const goalSaved = Number(activeGoal?.savedAmount || 0);
@@ -254,7 +341,7 @@ function Dashboard() {
             });
 
             setModalOpen(false);
-            fetchTransactions();
+            fetchDashboardData();
         } catch (error) {
             toast.error(
                 error.response?.data?.message || "Failed to add transaction");
@@ -303,7 +390,7 @@ function Dashboard() {
                         Goals
                     </a>
 
-                    <a href="#">
+                    <a href="/settings">
                         <i className="fa-solid fa-gear"></i>
                         Settings
                     </a>

@@ -744,5 +744,14 @@ textarea{
     }
 }
 
+/* Perfect Autofill Match - Login */
+.login-page .input-box input:-webkit-autofill,
+.login-page .input-box input:-webkit-autofill:hover, 
+.login-page .input-box input:-webkit-autofill:focus, 
+.login-page .input-box input:-webkit-autofill:active {
+    transition: background-color 600000s ease-in-out 0s;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
 
 

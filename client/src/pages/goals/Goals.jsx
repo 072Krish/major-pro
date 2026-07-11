@@ -5,13 +5,17 @@ import Swal from "sweetalert2";
 import { logout } from "../../utils/auth";
 import useAutoLogout from "../../hooks/useAutoLogout";
 import { addNotification } from "../../utils/notificationService";
+import {
+    getGoalsAPI,
+    addGoalAPI,
+    updateGoalAPI,
+    deleteGoalAPI,
+} from "../../services/goalService";
 
 import "../../assets/css/goals/goals.css";
 
 function Goals() {
     useAutoLogout();
-
-    const storageKey = "finwise_goals_data";
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [goals, setGoals] = useState([]);
@@ -26,23 +30,35 @@ function Goals() {
         deadline: "",
     });
 
-    useEffect(() => {
-        const savedGoals =
-            JSON.parse(localStorage.getItem(storageKey)) || [];
+const fetchGoals = async () => {
+    try {
+        const data = await getGoalsAPI();
 
-        const sortedGoals = [...savedGoals].sort((a, b) => {
-            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        const sortedGoals = [
+            ...(data.goals || []),
+        ].sort((a, b) => {
+            return (
+                new Date(b.createdAt || 0) -
+                new Date(a.createdAt || 0)
+            );
         });
 
         setGoals(sortedGoals);
-    }, []);
+    } catch (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Unable to Load Goals",
+            text:
+                error.response?.data?.message ||
+                "Failed to fetch goals.",
+            confirmButtonColor: "#EF4444",
+        });
+    }
+};
 
-    const saveGoalsToStorage = (updatedGoals) => {
-        localStorage.setItem(
-            storageKey,
-            JSON.stringify(updatedGoals)
-        );
-    };
+useEffect(() => {
+    fetchGoals();
+}, []);
 
     const formatCurrency = (amount) => {
         return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
@@ -181,167 +197,195 @@ function Goals() {
         });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        const title = formData.title.trim();
-        const target = Number(formData.targetAmount);
-        const saved = Number(formData.savedAmount || 0);
+    const title =
+        formData.title.trim();
 
-        if (!title || !target || target <= 0) {
-            Swal.fire({
-                icon: "warning",
-                title: "Invalid Goal",
-                text: "Please enter goal title and valid target amount.",
-                confirmButtonColor: "#2563EB",
-            });
-            return;
-        }
+    const target =
+        Number(formData.targetAmount);
 
-        try {
-            setSaving(true);
+    const saved =
+        Number(formData.savedAmount || 0);
 
-            const isEdit = Boolean(editingId);
-
-            const payload = {
-                title,
-                category: formData.category,
-                targetAmount: target,
-                savedAmount: saved,
-                deadline: formData.deadline,
-                updatedAt: new Date().toISOString(),
-            };
-
-            let updatedGoals;
-
-            if (isEdit) {
-                updatedGoals = goals.map((goal) =>
-                    goal.id === editingId
-                        ? {
-                            ...goal,
-                            ...payload,
-                        }
-                        : goal
-                );
-
-                Swal.fire({
-                    icon: "success",
-                    title: "Goal Updated",
-                    text: "Your goal has been updated successfully.",
-                    timer: 1400,
-                    showConfirmButton: false,
-                });
-
-                addNotification({
-                    title: "Goal Updated",
-                    message: `${title} goal updated.`,
-                    icon: "fa-bullseye",
-                });
-            } else {
-                const newGoal = {
-                    id: crypto.randomUUID
-                        ? crypto.randomUUID()
-                        : String(Date.now()),
-                    ...payload,
-                    createdAt: new Date().toISOString(),
-                };
-
-                updatedGoals = [newGoal, ...goals];
-
-                Swal.fire({
-                    icon: "success",
-                    title: "Goal Created",
-                    text: "Your new goal has been created.",
-                    timer: 1400,
-                    showConfirmButton: false,
-                });
-
-                addNotification({
-                    title: "Goal Created",
-                    message: `${title} goal created.`,
-                    icon: "fa-bullseye",
-                });
-            }
-
-            const sortedGoals = [...updatedGoals].sort((a, b) => {
-                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-            });
-
-            setGoals(sortedGoals);
-            saveGoalsToStorage(sortedGoals);
-            resetGoalForm();
-        } catch (error) {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Something went wrong while saving goal.",
-                confirmButtonColor: "#EF4444",
-            });
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleEditGoal = (goal) => {
-        setEditingId(goal.id);
-
-        setFormData({
-            title: goal.title || "",
-            category: goal.category || "Savings",
-            targetAmount: goal.targetAmount || "",
-            savedAmount: goal.savedAmount || "",
-            deadline: goal.deadline || "",
-        });
-
-        setTimeout(() => {
-            document
-                .querySelector(".goals-form-panel")
-                ?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-        }, 50);
-    };
-
-    const handleDeleteGoal = async (id) => {
-        const result = await Swal.fire({
-            title: "Delete Goal?",
-            text: "This goal will be permanently removed.",
+    if (!title || !target || target <= 0) {
+        Swal.fire({
             icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#EF4444",
-            cancelButtonColor: "#2563EB",
-            confirmButtonText: "Delete",
-            cancelButtonText: "Cancel",
+            title: "Invalid Goal",
+            text:
+                "Please enter goal title and valid target amount.",
+            confirmButtonColor: "#2563EB",
         });
 
-        if (!result.isConfirmed) return;
+        return;
+    }
 
-        const goalToDelete = goals.find((goal) => goal.id === id);
+    if (saved < 0) {
+        Swal.fire({
+            icon: "warning",
+            title: "Invalid Saved Amount",
+            text:
+                "Saved amount cannot be negative.",
+            confirmButtonColor: "#2563EB",
+        });
 
-        const updatedGoals = goals.filter((goal) => goal.id !== id);
+        return;
+    }
 
-        setGoals(updatedGoals);
-        saveGoalsToStorage(updatedGoals);
+    const payload = {
+        title,
+        category: formData.category,
+        targetAmount: target,
+        savedAmount: saved,
+        deadline:
+            formData.deadline || null,
+    };
+
+    try {
+        setSaving(true);
+
+        if (editingId) {
+            await updateGoalAPI(
+                editingId,
+                payload
+            );
+
+            addNotification({
+                title: "Goal Updated",
+                message: `${title} goal updated.`,
+                icon: "fa-bullseye",
+            });
+
+            await Swal.fire({
+                icon: "success",
+                title: "Goal Updated",
+                text:
+                    "Your goal has been updated successfully.",
+                timer: 1400,
+                showConfirmButton: false,
+            });
+        } else {
+            await addGoalAPI(payload);
+
+            addNotification({
+                title: "Goal Created",
+                message: `${title} goal created.`,
+                icon: "fa-bullseye",
+            });
+
+            await Swal.fire({
+                icon: "success",
+                title: "Goal Created",
+                text:
+                    "Your new goal has been created.",
+                timer: 1400,
+                showConfirmButton: false,
+            });
+        }
+
+        await fetchGoals();
+        resetGoalForm();
+    } catch (error) {
+        Swal.fire({
+            icon: "error",
+            title: editingId
+                ? "Goal Update Failed"
+                : "Goal Creation Failed",
+            text:
+                error.response?.data?.message ||
+                "Something went wrong while saving goal.",
+            confirmButtonColor: "#EF4444",
+        });
+    } finally {
+        setSaving(false);
+    }
+};
+
+const handleEditGoal = (goal) => {
+    setEditingId(goal._id);
+
+    setFormData({
+        title: goal.title || "",
+        category:
+            goal.category || "Savings",
+        targetAmount:
+            goal.targetAmount || "",
+        savedAmount:
+            goal.savedAmount || "",
+        deadline: goal.deadline
+            ? goal.deadline.split("T")[0]
+            : "",
+    });
+
+    setTimeout(() => {
+        document
+            .querySelector(".goals-form-panel")
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+    }, 50);
+};
+
+const handleDeleteGoal = async (id) => {
+    const result = await Swal.fire({
+        title: "Delete Goal?",
+        text:
+            "This goal will be permanently removed.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#EF4444",
+        cancelButtonColor: "#2563EB",
+        confirmButtonText: "Delete",
+        cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    const goalToDelete = goals.find(
+        (goal) => goal._id === id
+    );
+
+    try {
+        await deleteGoalAPI(id);
+
+        setGoals((previousGoals) =>
+            previousGoals.filter(
+                (goal) => goal._id !== id
+            )
+        );
+
+        addNotification({
+            title: "Goal Deleted",
+            message:
+                `${goalToDelete?.title || "Goal"} deleted.`,
+            icon: "fa-trash",
+        });
 
         await Swal.fire({
             icon: "success",
             title: "Deleted",
-            text: "Goal deleted successfully.",
+            text:
+                "Goal deleted successfully.",
             timer: 1400,
             showConfirmButton: false,
-        });
-
-        addNotification({
-            title: "Goal Deleted",
-            message: `${goalToDelete?.title || "Goal"} deleted.`,
-            icon: "fa-trash",
         });
 
         if (editingId === id) {
             resetGoalForm();
         }
-    };
+    } catch (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Delete Failed",
+            text:
+                error.response?.data?.message ||
+                "Unable to delete goal.",
+            confirmButtonColor: "#EF4444",
+        });
+    }
+};
 
     return (
         <div className="goals-page">
@@ -656,7 +700,7 @@ function Goals() {
                                     return (
                                         <div
                                             className="goals-item-card glass-hover"
-                                            key={goal.id}
+                                            key={goal._id}
                                         >
                                             <div className="goals-item-head">
                                                 <div className="goals-title-wrap">
@@ -715,7 +759,7 @@ function Goals() {
 
                                                 <button
                                                     className="goals-delete-btn"
-                                                    onClick={() => handleDeleteGoal(goal.id)}
+                                                    onClick={() => handleDeleteGoal(goal._id)}
                                                 >
                                                     <i className="fa-solid fa-trash"></i>
                                                     Delete

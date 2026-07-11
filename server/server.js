@@ -5,6 +5,9 @@ require("dotenv").config();
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
+const goalRoutes = require("./routes/goalRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
 
 const app = express();
 
@@ -15,6 +18,9 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/goals", goalRoutes);
+app.use("/api/budget", budgetRoutes);
+app.use("/api/settings", settingsRoutes);
 
 app.get("/", (req, res) => {
     res.send("🚀 FinWise MERN Backend Running...");

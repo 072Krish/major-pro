@@ -346,7 +346,7 @@ function Transactions() {
                         Goals
                     </a>
 
-                    <a href="#">
+                    <a href="/settings">
                         <i className="fa-solid fa-gear"></i>
                         Settings
                     </a>

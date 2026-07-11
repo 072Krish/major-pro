@@ -5,6 +5,11 @@ import toast from "react-hot-toast";
 import { logout } from "../../utils/auth";
 import useAutoLogout from "../../hooks/useAutoLogout";
 import { getTransactionsAPI } from "../../services/transactionService";
+import {
+    getBudgetAPI,
+    updateMonthlyBudgetAPI,
+    updateCategoryBudgetsAPI,
+} from "../../services/budgetService";
 
 import "../../assets/css/budget/budget.css";
 
@@ -34,8 +39,6 @@ const [categoryInputs, setCategoryInputs] = useState({
 });
 
     const [savingCategories, setSavingCategories] = useState(false);
-
-    const storageKey = "finwise_budget_data";
 
     const currentMonthText = new Date().toLocaleString("en-IN", {
         month: "long",
@@ -119,25 +122,48 @@ const [categoryInputs, setCategoryInputs] = useState({
 
             const startTime = Date.now();
 
-            const savedBudget = JSON.parse(localStorage.getItem(storageKey)) || {};
+const budgetResponse =
+    await getBudgetAPI();
 
-            const savedMonthlyLimit = Number(savedBudget.monthlyLimit || 0);
-            const savedCategories = savedBudget.categories || {};
+const budget =
+    budgetResponse.budget;
 
-            setMonthlyLimit(savedMonthlyLimit);
-            setBudgetInput(savedMonthlyLimit || "");
-            setCategoryBudgets({
-                food: savedCategories.food || "",
-                shopping: savedCategories.shopping || "",
-                transport: savedCategories.transport || "",
-                entertainment: savedCategories.entertainment || "",
-            });
+setMonthlyLimit(
+    Number(budget.monthlyBudget || 0)
+);
 
-            setCategoryInputs({
-    food: savedCategories.food || "",
-    shopping: savedCategories.shopping || "",
-    transport: savedCategories.transport || "",
-    entertainment: savedCategories.entertainment || "",
+setBudgetInput(
+    Number(budget.monthlyBudget || 0)
+);
+
+const mappedCategories = {
+    food: 0,
+    shopping: 0,
+    transport: 0,
+    entertainment: 0,
+};
+
+budget.categoryBudgets.forEach((item) => {
+
+    const key =
+        normalizeCategory(item.category);
+
+    if (mappedCategories.hasOwnProperty(key)) {
+
+        mappedCategories[key] =
+            item.limit;
+
+    }
+
+});
+
+setCategoryBudgets(mappedCategories);
+
+setCategoryInputs({
+    food: mappedCategories.food,
+    shopping: mappedCategories.shopping,
+    transport: mappedCategories.transport,
+    entertainment: mappedCategories.entertainment,
 });
 
             const data = await getTransactionsAPI();
@@ -355,34 +381,39 @@ const [categoryInputs, setCategoryInputs] = useState({
         };
     }, [monthlyLimit, spent, dailyAvailable, categoryAlert]);
 
-    const saveToStorage = (newMonthlyLimit, newCategories) => {
-        localStorage.setItem(
-            storageKey,
-            JSON.stringify({
-                monthlyLimit: Number(newMonthlyLimit || 0),
-                categories: newCategories,
-                updatedAt: new Date().toISOString(),
-            })
-        );
-    };
 
-    const handleSaveBudget = async () => {
-        const value = Number(budgetInput);
+const handleSaveBudget = async () => {
 
-        if (!value || value <= 0) {
-            toast.error("Please enter a valid monthly budget.");
-            return;
-        }
+    const value = Number(budgetInput);
+
+    if (!value || value <= 0) {
+        toast.error("Please enter a valid monthly budget.");
+        return;
+    }
+
+    try {
 
         setSavingBudget(true);
 
-        setTimeout(() => {
-            setMonthlyLimit(value);
-            saveToStorage(value, categoryBudgets);
-            toast.success("Budget saved successfully");
-            setSavingBudget(false);
-        }, 500);
-    };
+        await updateMonthlyBudgetAPI(value);
+
+        setMonthlyLimit(value);
+
+        toast.success("Budget saved successfully");
+
+    } catch (error) {
+
+        toast.error(
+            error.response?.data?.message ||
+            "Unable to save budget"
+        );
+
+    } finally {
+
+        setSavingBudget(false);
+
+    }
+};
 
 const handleCategoryChange = (name, value) => {
     setCategoryInputs((prev) => ({
@@ -391,9 +422,7 @@ const handleCategoryChange = (name, value) => {
     }));
 };
 
-const handleSaveCategoryBudgets = () => {
-    setSavingCategories(true);
-
+const handleSaveCategoryBudgets = async () => {
     const updatedCategories = {
         food: Number(categoryInputs.food || 0),
         shopping: Number(categoryInputs.shopping || 0),
@@ -401,12 +430,60 @@ const handleSaveCategoryBudgets = () => {
         entertainment: Number(categoryInputs.entertainment || 0),
     };
 
-    setTimeout(() => {
-        setCategoryBudgets(updatedCategories);
-        saveToStorage(monthlyLimit, updatedCategories);
-        toast.success("Category budgets saved successfully");
+    const hasInvalidValue = Object.values(
+        updatedCategories
+    ).some((value) => value < 0);
+
+    if (hasInvalidValue) {
+        toast.error(
+            "Category budget cannot be negative."
+        );
+        return;
+    }
+
+    try {
+        setSavingCategories(true);
+
+        const categoryBudgetList = [
+            {
+                category: "Food",
+                limit: updatedCategories.food,
+            },
+            {
+                category: "Shopping",
+                limit: updatedCategories.shopping,
+            },
+            {
+                category: "Transport",
+                limit: updatedCategories.transport,
+            },
+            {
+                category: "Entertainment",
+                limit: updatedCategories.entertainment,
+            },
+        ];
+
+        await updateCategoryBudgetsAPI(
+            categoryBudgetList
+        );
+
+        setCategoryBudgets(
+            updatedCategories
+        );
+
+        toast.success(
+            "Category budgets saved successfully"
+        );
+
+    } catch (error) {
+        toast.error(
+            error.response?.data?.message ||
+            "Unable to save category budgets"
+        );
+
+    } finally {
         setSavingCategories(false);
-    }, 500);
+    }
 };
 
     const renderCategoryCard = ({
