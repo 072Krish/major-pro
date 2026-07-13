@@ -9,6 +9,8 @@ import {
 import {
     getSettingsAPI,
     updateSettingsAPI,
+    updateProfileAPI,
+    changePasswordAPI,
 } from "../services/settingsService";
 
 const SettingsContext = createContext(null);
@@ -286,46 +288,67 @@ export function SettingsProvider({ children }) {
     // UPDATE PROFILE
     // ==========================================
 
-    const updateProfile = (profileUpdates) => {
-        setSettings((previousSettings) => ({
-            ...previousSettings,
+const updateProfile = async (
+    profileUpdates
+) => {
 
-            profile: {
-                ...previousSettings.profile,
-                ...profileUpdates,
-            },
-        }));
+    const response =
+        await updateProfileAPI(profileUpdates);
 
-        const currentUser =
-            JSON.parse(
-                localStorage.getItem("user")
-            ) || {};
+    const updatedUser =
+        response.user;
 
-        localStorage.setItem(
-            "user",
-            JSON.stringify({
-                ...currentUser,
-                ...profileUpdates,
+    setSettings((previousSettings) => ({
+        ...previousSettings,
 
-                name:
-                    profileUpdates.name ||
-                    currentUser.name,
-            })
-        );
-    };
+        profile: {
+            ...previousSettings.profile,
+
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            avatar:
+                updatedUser.profileImage ||
+                previousSettings.profile.avatar,
+        },
+    }));
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify(updatedUser)
+    );
+
+    return response;
+
+};
+
+// ==========================================
+// CHANGE PASSWORD
+// ==========================================
+
+const changePassword = async (
+    passwordData
+) => {
+
+    return await changePasswordAPI(
+        passwordData
+    );
+
+};
 
 
     // ==========================================
     // CONTEXT VALUE
     // ==========================================
 
-    const value = useMemo(
-        () => ({
-            settings,
-            settingsLoading,
-            updateSettings,
-            updateProfile,
-        }),
+const value = useMemo(
+    () => ({
+        settings,
+        settingsLoading,
+        updateSettings,
+        updateProfile,
+        changePassword,
+    }),
         [
             settings,
             settingsLoading,

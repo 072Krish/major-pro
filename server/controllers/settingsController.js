@@ -234,6 +234,187 @@ const updateSettings = async (req, res) => {
     }
 };
 
+// ==========================================
+// UPDATE CURRENT USER PROFILE
+// ==========================================
+
+const updateProfile = async (req, res) => {
+    try {
+        const { name, phone } = req.body;
+
+        const trimmedName = String(name || "").trim();
+        const trimmedPhone = String(phone || "").trim();
+
+        if (!trimmedName) {
+            return res.status(400).json({
+                success: false,
+                message: "Name is required",
+            });
+        }
+
+        if (
+            trimmedPhone &&
+            !/^\+?[0-9]{10,15}$/.test(trimmedPhone)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid phone number",
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $set: {
+                    name: trimmedName,
+                    phone: trimmedPhone,
+                },
+            },
+            {
+                returnDocument: "after",
+                runValidators: true,
+            }
+        ).select("-password");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                profileImage: user.profileImage,
+            },
+        });
+
+    } catch (error) {
+        console.error(
+            "Update Profile Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to update profile",
+        });
+    }
+};
+
+// ==========================================
+// CHANGE CURRENT USER PASSWORD
+// ==========================================
+
+const changePassword = async (req, res) => {
+    try {
+        const {
+            currentPassword,
+            newPassword,
+        } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Current password and new password are required",
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "New password must contain at least 8 characters",
+            });
+        }
+
+        if (
+            !/[A-Z]/.test(newPassword) ||
+            !/[0-9]/.test(newPassword)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "New password must contain at least one uppercase letter and one number",
+            });
+        }
+
+        const user = await User.findById(
+            req.user._id
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        const bcrypt = require("bcryptjs");
+
+        const isCurrentPasswordCorrect =
+            await bcrypt.compare(
+                currentPassword,
+                user.password
+            );
+
+        if (!isCurrentPasswordCorrect) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Current password is incorrect",
+            });
+        }
+
+        const isSamePassword =
+            await bcrypt.compare(
+                newPassword,
+                user.password
+            );
+
+        if (isSamePassword) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "New password must be different from current password",
+            });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+
+        user.password = await bcrypt.hash(
+            newPassword,
+            salt
+        );
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message:
+                "Password changed successfully",
+        });
+
+    } catch (error) {
+        console.error(
+            "Change Password Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Unable to change password",
+        });
+    }
+};
 
 // ==========================================
 // EXPORT CONTROLLERS
@@ -242,4 +423,6 @@ const updateSettings = async (req, res) => {
 module.exports = {
     getSettings,
     updateSettings,
+    updateProfile,
+    changePassword,
 };

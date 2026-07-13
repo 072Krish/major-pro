@@ -13,7 +13,7 @@ import "../../assets/css/settings/settings.css";
 function Settings() {
     useAutoLogout();
 
-    const { settings, updateSettings, updateProfile } = useSettings();
+    const { settings, updateSettings, updateProfile, changePassword } = useSettings();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [savingSection, setSavingSection] = useState("");
@@ -156,28 +156,54 @@ function Settings() {
         setProfileForm((previous) => ({ ...previous, [name]: value }));
     };
 
-    const handleSaveProfile = async () => {
-        const name = profileForm.name.trim();
-        const phone = profileForm.phone.trim();
+const handleSaveProfile = async () => {
+    const name = profileForm.name.trim();
+    const phone = profileForm.phone.trim();
 
-        if (!name) return toast.error("Please enter your full name");
-        if (phone && !/^\+?[0-9]{10,15}$/.test(phone)) {
-            return toast.error("Please enter a valid phone number");
-        }
+    if (!name) {
+        toast.error("Please enter your full name");
+        return;
+    }
 
-        try {
-            setSavingSection("profile");
-            updateProfile({ name, email: profileForm.email, phone });
-            addNotification({
-                title: "Profile Updated",
-                message: "Your profile information was updated.",
-                icon: "fa-user-check",
-            });
-            toast.success("Profile updated successfully");
-        } finally {
-            setSavingSection("");
-        }
-    };
+    if (
+        phone &&
+        !/^\+?[0-9]{10,15}$/.test(phone)
+    ) {
+        toast.error(
+            "Please enter a valid phone number"
+        );
+        return;
+    }
+
+    try {
+        setSavingSection("profile");
+
+        await updateProfile({
+            name,
+            phone,
+        });
+
+        addNotification({
+            title: "Profile Updated",
+            message:
+                "Your profile information was updated.",
+            icon: "fa-user-check",
+        });
+
+        toast.success(
+            "Profile updated successfully"
+        );
+
+    } catch (error) {
+        toast.error(
+            error.response?.data?.message ||
+            "Unable to update profile"
+        );
+
+    } finally {
+        setSavingSection("");
+    }
+};
 
     const handlePasswordChange = (event) => {
         const { name, value } = event.target;
@@ -188,24 +214,86 @@ function Settings() {
         setShowPasswords((previous) => ({ ...previous, [field]: !previous[field] }));
     };
 
-    const handleUpdatePassword = () => {
-        const { currentPassword, newPassword, confirmPassword } = passwordForm;
+const handleUpdatePassword = async () => {
 
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            return toast.error("Please complete all password fields");
-        }
-        if (newPassword.length < 8) {
-            return toast.error("New password must contain at least 8 characters");
-        }
-        if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-            return toast.error("Use at least one uppercase letter and one number");
-        }
-        if (newPassword !== confirmPassword) {
-            return toast.error("New password and confirmation do not match");
-        }
+    const {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+    } = passwordForm;
 
-        toast("Password API integration is the next backend step", { icon: "🔐" });
-    };
+    if (
+        !currentPassword ||
+        !newPassword ||
+        !confirmPassword
+    ) {
+        return toast.error(
+            "Please complete all password fields"
+        );
+    }
+
+    if (newPassword.length < 8) {
+        return toast.error(
+            "New password must contain at least 8 characters"
+        );
+    }
+
+    if (
+        !/[A-Z]/.test(newPassword) ||
+        !/[0-9]/.test(newPassword)
+    ) {
+        return toast.error(
+            "Use at least one uppercase letter and one number"
+        );
+    }
+
+    if (
+        newPassword !== confirmPassword
+    ) {
+        return toast.error(
+            "Passwords do not match"
+        );
+    }
+
+    try {
+
+        setSavingSection("password");
+
+        await changePassword({
+
+            currentPassword,
+
+            newPassword,
+
+        });
+
+        toast.success(
+            "Password changed successfully"
+        );
+
+        setPasswordForm({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+        });
+
+    } catch (error) {
+
+        toast.error(
+
+            error.response?.data?.message ||
+
+            "Unable to change password"
+
+        );
+
+    } finally {
+
+        setSavingSection("");
+
+    }
+
+};
 
     const handleTwoFactorChange = async (event) => {
         const newValue = event.target.checked;
@@ -462,7 +550,7 @@ const handleSavePreferences = async () => {
                                 </div>
                             ))}
 
-                            <button type="button" className="fw-primary-button" onClick={handleUpdatePassword}><i className="fa-solid fa-shield-keyhole"></i>Update Password</button>
+                            <button type="button" className="fw-primary-button" onClick={handleUpdatePassword} disabled={savingSection === "password"}><i className="fa-solid fa-shield-keyhole"></i>Update Password</button>
                         </article>
                     </section>
 

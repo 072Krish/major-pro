@@ -59,3 +59,47 @@ export const updateSettingsAPI = async (
     return response.data;
 
 };
+
+// ======================================
+// UPDATE PROFILE
+// ======================================
+
+export const updateProfileAPI = async (
+    profileData
+) => {
+
+    const response = await axios.put(
+
+        `${API_URL}/profile`,
+
+        profileData,
+
+        getAuthConfig()
+
+    );
+
+    return response.data;
+
+};
+
+// ======================================
+// CHANGE PASSWORD
+// ======================================
+
+export const changePasswordAPI = async (
+    passwordData
+) => {
+
+    const response = await axios.put(
+
+        `${API_URL}/password`,
+
+        passwordData,
+
+        getAuthConfig()
+
+    );
+
+    return response.data;
+
+};
